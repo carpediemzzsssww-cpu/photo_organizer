@@ -1,0 +1,1659 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能相册整理工具 - 产品思考全过程 | AI PM Case Study</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=JetBrains+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #111315;
+            --bg-secondary: #171a1d;
+            --bg-tertiary: #1e2227;
+            --accent-primary: #b89a6a;
+            --accent-secondary: #8c7a5b;
+            --accent-cool: #7f8f9f;
+            --text-primary: #e8e6e3;
+            --text-secondary: #b3b0ab;
+            --text-muted: #7f7b74;
+            --success: #7d9b8a;
+            --warning: #b29a6b;
+            --error: #a07a7a;
+            --border: rgba(232, 230, 227, 0.12);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans SC', -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.75;
+            letter-spacing: 0.01em;
+            overflow-x: hidden;
+        }
+
+        /* Atmosphere background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background:
+                radial-gradient(circle at 18% 8%, rgba(184, 154, 106, 0.12), transparent 42%),
+                radial-gradient(circle at 82% 18%, rgba(127, 143, 159, 0.12), transparent 38%),
+                linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 30%);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* 顶部导航 */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(17, 19, 21, 0.72);
+            backdrop-filter: blur(16px) saturate(120%);
+            border-bottom: 1px solid var(--border);
+            z-index: 1000;
+        }
+
+        .logo {
+            font-family: 'Cormorant Garamond', 'Noto Serif SC', serif;
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.02em;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 30px;
+        }
+
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: color 0.24s ease;
+            letter-spacing: 0.5px;
+        }
+
+        .nav-links a:hover {
+            color: var(--text-primary);
+        }
+
+        .lang-switch {
+            display: inline-flex;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            overflow: hidden;
+            background: var(--bg-secondary);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+        }
+
+        .lang-btn {
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            padding: 6px 12px;
+            font-size: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            cursor: pointer;
+            transition: all 0.25s;
+        }
+
+        .lang-btn:hover {
+            color: var(--text-primary);
+        }
+
+        .lang-btn.active {
+            color: #111315;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 100px 40px 60px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 640px;
+            height: 640px;
+            background: radial-gradient(circle, rgba(184, 154, 106, 0.16), rgba(127, 143, 159, 0.08) 42%, transparent 72%);
+            opacity: 0.65;
+        }
+
+        .hero-content {
+            max-width: 900px;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-tag {
+            display: inline-block;
+            padding: 8px 20px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            font-size: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            letter-spacing: 1px;
+            margin-bottom: 30px;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .hero h1 {
+            font-family: 'Cormorant Garamond', 'Noto Serif SC', serif;
+            font-size: 72px;
+            font-weight: 600;
+            line-height: 1.12;
+            margin-bottom: 30px;
+            letter-spacing: -0.03em;
+            animation: fadeInUp 0.8s ease-out 0.2s both;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .hero-highlight {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-subtitle {
+            font-size: 20px;
+            color: var(--text-secondary);
+            margin-bottom: 50px;
+            animation: fadeInUp 0.8s ease-out 0.4s both;
+        }
+
+        .hero-meta {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            flex-wrap: wrap;
+            animation: fadeInUp 0.8s ease-out 0.6s both;
+        }
+
+        .meta-item {
+            text-align: center;
+        }
+
+        .meta-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+
+        .meta-value {
+            font-size: 16px;
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        /* Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 40px;
+        }
+
+        /* Section */
+        section {
+            padding: 120px 0;
+            position: relative;
+        }
+
+        .section-number {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            color: var(--accent-primary);
+            margin-bottom: 10px;
+            letter-spacing: 2px;
+        }
+
+        .section-title {
+            font-family: 'Cormorant Garamond', 'Noto Serif SC', serif;
+            font-size: 48px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            letter-spacing: -0.02em;
+        }
+
+        .section-desc {
+            font-size: 18px;
+            color: var(--text-secondary);
+            margin-bottom: 60px;
+            max-width: 700px;
+        }
+
+        /* Timeline */
+        .timeline {
+            position: relative;
+            padding-left: 60px;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(to bottom, 
+                rgba(127, 143, 159, 0.7),
+                rgba(184, 154, 106, 0.8),
+                transparent);
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 80px;
+            opacity: 0;
+            transform: translateX(-30px);
+            animation: slideInRight 0.6s ease-out forwards;
+        }
+
+        .timeline-item:nth-child(1) { animation-delay: 0.1s; }
+        .timeline-item:nth-child(2) { animation-delay: 0.2s; }
+        .timeline-item:nth-child(3) { animation-delay: 0.3s; }
+        .timeline-item:nth-child(4) { animation-delay: 0.4s; }
+        .timeline-item:nth-child(5) { animation-delay: 0.5s; }
+
+        @keyframes slideInRight {
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .timeline-dot {
+            position: absolute;
+            left: -66px;
+            top: 8px;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--accent-primary);
+            box-shadow: 0 0 0 4px var(--bg-primary);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .timeline-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 10px 28px rgba(0, 0, 0, 0.2);
+            transition: transform 0.24s ease, border-color 0.24s ease, box-shadow 0.24s ease;
+        }
+
+        .timeline-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--accent-primary);
+            box-shadow: 0 16px 36px rgba(0, 0, 0, 0.28);
+        }
+
+        .timeline-label {
+            display: inline-block;
+            padding: 6px 16px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            font-size: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--accent-primary);
+            margin-bottom: 20px;
+        }
+
+        .timeline-title {
+            font-family: 'Cormorant Garamond', 'Noto Serif SC', serif;
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .timeline-content {
+            color: var(--text-secondary);
+            line-height: 1.8;
+            margin-bottom: 20px;
+        }
+
+        /* Problem Cards */
+        .problems-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .problem-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 30px;
+            transition: transform 0.24s ease, border-color 0.24s ease, box-shadow 0.24s ease;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+        }
+
+        .problem-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.3s;
+        }
+
+        .problem-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .problem-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--accent-primary);
+            box-shadow: 0 14px 30px rgba(0, 0, 0, 0.24);
+        }
+
+        .problem-icon {
+            font-size: 36px;
+            margin-bottom: 15px;
+        }
+
+        .problem-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .problem-desc {
+            color: var(--text-secondary);
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        /* Mistake Box */
+        .mistake-box {
+            background: linear-gradient(135deg, rgba(160, 122, 122, 0.16), rgba(140, 122, 91, 0.1));
+            border: 1px solid rgba(160, 122, 122, 0.65);
+            border-radius: 16px;
+            padding: 40px;
+            margin: 40px 0;
+            position: relative;
+        }
+
+        .mistake-box::before {
+            content: '⚠️';
+            position: absolute;
+            top: -20px;
+            left: 40px;
+            font-size: 32px;
+            background: var(--bg-primary);
+            padding: 0 10px;
+        }
+
+        .mistake-title {
+            font-family: 'Noto Serif SC', serif;
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--error);
+            margin-bottom: 20px;
+        }
+
+        /* Learning Box */
+        .learning-box {
+            background: linear-gradient(135deg, rgba(125, 155, 138, 0.16), rgba(127, 143, 159, 0.1));
+            border: 1px solid rgba(125, 155, 138, 0.65);
+            border-radius: 16px;
+            padding: 40px;
+            margin: 40px 0;
+            position: relative;
+        }
+
+        .learning-box::before {
+            content: '💡';
+            position: absolute;
+            top: -20px;
+            left: 40px;
+            font-size: 32px;
+            background: var(--bg-primary);
+            padding: 0 10px;
+        }
+
+        .learning-title {
+            font-family: 'Noto Serif SC', serif;
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--success);
+            margin-bottom: 20px;
+        }
+
+        /* Code Block */
+        .code-block {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 30px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            overflow-x: auto;
+            margin: 30px 0;
+            position: relative;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+        }
+
+        .code-block::before {
+            content: attr(data-lang);
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .code-line {
+            display: block;
+            padding: 4px 0;
+        }
+
+        .code-comment {
+            color: var(--text-muted);
+        }
+
+        .code-keyword {
+            color: var(--accent-primary);
+        }
+
+        .code-string {
+            color: var(--success);
+        }
+
+        /* Comparison Table */
+        .comparison {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 30px;
+            margin: 40px 0;
+        }
+
+        .comparison-col {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+        }
+
+        .comparison-col.wrong {
+            border-color: rgba(160, 122, 122, 0.65);
+        }
+
+        .comparison-col.right {
+            border-color: rgba(125, 155, 138, 0.65);
+        }
+
+        .comparison-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .comparison-icon {
+            font-size: 24px;
+        }
+
+        .comparison-title {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .comparison-list {
+            list-style: none;
+        }
+
+        .comparison-list li {
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .comparison-list li:last-child {
+            border-bottom: none;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 30px;
+            margin: 40px 0;
+        }
+
+        .stat-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            transition: transform 0.24s ease, border-color 0.24s ease, box-shadow 0.24s ease;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-3px);
+            border-color: rgba(127, 143, 159, 0.55);
+            box-shadow: 0 14px 30px rgba(0, 0, 0, 0.22);
+        }
+
+        .stat-number {
+            font-family: 'Cormorant Garamond', 'Noto Serif SC', serif;
+            font-size: 48px;
+            font-weight: 600;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        /* CTA Section */
+        .cta-section {
+            background: linear-gradient(150deg, var(--bg-secondary), rgba(30, 34, 39, 0.9));
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 80px 60px;
+            text-align: center;
+            margin: 80px 0;
+            box-shadow: 0 18px 48px rgba(0, 0, 0, 0.24);
+        }
+
+        .cta-title {
+            font-family: 'Cormorant Garamond', 'Noto Serif SC', serif;
+            font-size: 42px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .cta-desc {
+            font-size: 18px;
+            color: var(--text-secondary);
+            margin-bottom: 40px;
+        }
+
+        .cta-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 16px 40px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: transform 0.24s ease, box-shadow 0.24s ease, border-color 0.24s ease, color 0.24s ease, background 0.24s ease;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: #111315;
+            border: 1px solid rgba(184, 154, 106, 0.6);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 12px 24px rgba(184, 154, 106, 0.2);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.01);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+            transform: translateY(-1px);
+        }
+
+        /* Footer */
+        footer {
+            border-top: 1px solid var(--border);
+            padding: 60px 40px;
+            text-align: center;
+            background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.01));
+        }
+
+        footer p {
+            color: var(--text-muted);
+            margin-bottom: 20px;
+        }
+
+        .social-links {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .social-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: color 0.24s ease;
+        }
+
+        .social-links a:hover {
+            color: var(--accent-cool);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 42px;
+            }
+            
+            .section-title {
+                font-size: 32px;
+            }
+
+            .comparison {
+                grid-template-columns: 1fr;
+            }
+
+            .timeline {
+                padding-left: 40px;
+            }
+
+            .timeline-dot {
+                left: -46px;
+            }
+
+            nav {
+                padding: 12px 16px;
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
+            }
+
+            .logo {
+                font-size: 20px;
+                align-self: flex-start;
+            }
+
+            .nav-actions {
+                width: 100%;
+                justify-content: space-between;
+                gap: 10px;
+            }
+
+            .nav-links {
+                gap: 10px;
+                flex-wrap: wrap;
+            }
+
+            .nav-links a {
+                font-size: 12px;
+                letter-spacing: 0.2px;
+            }
+
+            .lang-btn {
+                padding: 5px 9px;
+            }
+
+            .container {
+                padding: 0 20px;
+            }
+
+            section {
+                padding: 80px 0;
+            }
+        }
+
+        /* Scroll Reveal Animation */
+        .reveal {
+            opacity: 0;
+            transform: translateY(24px);
+            transition: all 0.65s ease-out;
+        }
+
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="logo">📸 Smart Album</div>
+        <div class="nav-actions">
+            <div class="nav-links">
+                <a href="#problem">问题</a>
+                <a href="#mistakes">教训</a>
+                <a href="#learning">收获</a>
+                <a href="#outcome">成果</a>
+            </div>
+            <div class="lang-switch" role="group" aria-label="Language switch">
+                <button type="button" class="lang-btn active" data-lang="zh">中</button>
+                <button type="button" class="lang-btn" data-lang="en">EN</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="hero">
+        <div class="hero-content">
+            <div class="hero-tag">AI PRODUCT MANAGER CASE STUDY</div>
+            <h1>
+                从过度设计到<br>
+                <span class="hero-highlight">产品本质</span>的思考
+            </h1>
+            <p class="hero-subtitle">
+                一个智能相册整理工具的完整产品思考过程:<br>
+                初始想法 → 技术实现 → 用户质疑 → 深度反思 → MVP迭代
+            </p>
+            <div class="hero-meta">
+                <div class="meta-item">
+                    <div class="meta-label">项目类型</div>
+                    <div class="meta-value">AI产品设计</div>
+                </div>
+                <div class="meta-item">
+                    <div class="meta-label">开发周期</div>
+                    <div class="meta-value">2周迭代</div>
+                </div>
+                <div class="meta-item">
+                    <div class="meta-label">技术栈</div>
+                    <div class="meta-value">Python + Qwen 2.5</div>
+                </div>
+                <div class="meta-item">
+                    <div class="meta-label">核心价值</div>
+                    <div class="meta-value">产品思维</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Problem Definition -->
+    <section id="problem">
+        <div class="container">
+            <div class="section-number">01 / 问题发现</div>
+            <h2 class="section-title">从真实痛点出发</h2>
+            <p class="section-desc">
+                在日常使用手机的过程中,我观察到相册管理是一个普遍存在但被忽视的问题。
+            </p>
+
+            <div class="problems-grid">
+                <div class="problem-card">
+                    <div class="problem-icon">📸</div>
+                    <h3 class="problem-title">冗余照片堆积</h3>
+                    <p class="problem-desc">同一场景连拍多张后未筛选,导致大量相似照片占用空间</p>
+                </div>
+                <div class="problem-card">
+                    <div class="problem-icon">📱</div>
+                    <h3 class="problem-title">截图残留</h3>
+                    <p class="problem-desc">验证码、订单、快递信息等临时截图在使用后未被清理</p>
+                </div>
+                <div class="problem-card">
+                    <div class="problem-icon">🗂️</div>
+                    <h3 class="problem-title">缺乏智能分类</h3>
+                    <p class="problem-desc">不同时间、地点、类型的照片混杂在一起,找照片困难</p>
+                </div>
+                <div class="problem-card">
+                    <div class="problem-icon">💾</div>
+                    <h3 class="problem-title">存储空间紧张</h3>
+                    <p class="problem-desc">手机提示"存储空间不足",但手动整理耗时费力</p>
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number">3000+</div>
+                    <div class="stat-label">平均相册照片数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">30%</div>
+                    <div class="stat-label">冗余照片占比</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">2小时</div>
+                    <div class="stat-label">手动整理耗时</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">0次</div>
+                    <div class="stat-label">大多数人整理频率</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Initial Solution -->
+    <section>
+        <div class="container">
+            <div class="section-number">02 / 初始方案</div>
+            <h2 class="section-title">技术先行的设计</h2>
+            <p class="section-desc">
+                基于对问题的理解,我快速设计了一个"功能完整"的解决方案。
+            </p>
+
+            <div class="timeline">
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-card">
+                        <div class="timeline-label">功能设计</div>
+                        <h3 class="timeline-title">分层处理策略</h3>
+                        <div class="timeline-content">
+                            <p>设计了三层架构:</p>
+                            <ul style="margin-left: 20px; margin-top: 10px;">
+                                <li>即时层: 功能性文件识别(截图、验证码)</li>
+                                <li>短期层: 冗余照片检测与删除建议</li>
+                                <li>长期层: 智能分类与归档</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-card">
+                        <div class="timeline-label">技术实现</div>
+                        <h3 class="timeline-title">AI + 传统算法结合</h3>
+                        <div class="timeline-content">
+                            <p>技术栈:</p>
+                            <ul style="margin-left: 20px; margin-top: 10px;">
+                                <li>感知哈希算法检测相似照片</li>
+                                <li>OpenCV清晰度评分</li>
+                                <li>Qwen 2.5 7B本地大模型推理</li>
+                                <li>HTML可视化报告生成</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-card">
+                        <div class="timeline-label">快速开发</div>
+                        <h3 class="timeline-title">2小时完成MVP</h3>
+                        <div class="timeline-content">
+                            <p>在没有充分用户验证的情况下,直接写了400+行Python代码,实现了:</p>
+                            <ul style="margin-left: 20px; margin-top: 10px;">
+                                <li>照片扫描与特征提取</li>
+                                <li>相似度计算与分组</li>
+                                <li>AI智能评分</li>
+                                <li>可视化报告生成</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="code-block" data-lang="PYTHON">
+<span class="code-line"><span class="code-comment"># 核心算法示例</span></span>
+<span class="code-line"><span class="code-keyword">def</span> calculate_perceptual_hash(image_path):</span>
+<span class="code-line">    <span class="code-comment"># 感知哈希算法</span></span>
+<span class="code-line">    img = Image.open(image_path).convert(<span class="code-string">'L'</span>)</span>
+<span class="code-line">    img = img.resize((8, 8))</span>
+<span class="code-line">    pixels = np.array(img).flatten()</span>
+<span class="code-line">    avg = pixels.mean()</span>
+<span class="code-line">    <span class="code-keyword">return</span> <span class="code-string">''</span>.join([<span class="code-string">'1'</span> <span class="code-keyword">if</span> p > avg <span class="code-keyword">else</span> <span class="code-string">'0'</span> <span class="code-keyword">for</span> p <span class="code-keyword">in</span> pixels])</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Mistakes -->
+    <section id="mistakes">
+        <div class="container">
+            <div class="section-number">03 / 关键教训</div>
+            <h2 class="section-title">过度设计的代价</h2>
+            <p class="section-desc">
+                在实际测试中,用户的一句质疑让我意识到方案存在根本性问题。
+            </p>
+
+            <div class="mistake-box">
+                <h3 class="mistake-title">用户质疑: "AI怎么判断哪些截图可以删?"</h3>
+                <p style="color: var(--text-secondary); line-height: 1.8;">
+                    当工具识别出截图并建议删除时,测试用户提出了一个核心问题:<br>
+                    "这些截图里可能有重要信息(银行转账、身份证、重要通知),如果AI误删了怎么办?你拿什么标准来判断哪些是临时的、哪些是重要的?"
+                </p>
+                <p style="color: var(--text-secondary); margin-top: 20px; line-height: 1.8;">
+                    这个问题暴露了产品设计的核心矛盾:
+                    <strong style="color: var(--error)">用户需要自动化,但更害怕误删重要数据。</strong>
+                </p>
+            </div>
+
+            <div class="comparison">
+                <div class="comparison-col wrong">
+                    <div class="comparison-header">
+                        <span class="comparison-icon">❌</span>
+                        <h3 class="comparison-title">我犯的错误</h3>
+                    </div>
+                    <ul class="comparison-list">
+                        <li>没有做用户调研,凭主观假设设计功能</li>
+                        <li>解决方案先行,而非问题驱动</li>
+                        <li>追求"技术炫技",堆砌AI能力</li>
+                        <li>功能过载,10+功能但没有聚焦核心价值</li>
+                        <li>忽视了信任问题:用户不敢让AI删照片</li>
+                        <li>跳过了原型验证,直接写了400行代码</li>
+                    </ul>
+                </div>
+
+                <div class="comparison-col right">
+                    <div class="comparison-header">
+                        <span class="comparison-icon">✅</span>
+                        <h3 class="comparison-title">应该怎么做</h3>
+                    </div>
+                    <ul class="comparison-list">
+                        <li>先访谈5-10个真实用户,验证痛点</li>
+                        <li>从用户最痛的点切入,而非"大而全"</li>
+                        <li>评估AI的真实价值:成本vs收益</li>
+                        <li>定义清晰的MVP:只做1个核心功能</li>
+                        <li>设计人机协作:AI辅助,人类决策</li>
+                        <li>先做低保真原型,找5个人测试反馈</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Learning -->
+    <section id="learning">
+        <div class="container">
+            <div class="section-number">04 / 深度反思</div>
+            <h2 class="section-title">重新思考产品本质</h2>
+            <p class="section-desc">
+                这次失败让我系统性地反思了AI产品经理的核心能力要求。
+            </p>
+
+            <div class="learning-box">
+                <h3 class="learning-title">AI PM ≠ 会用AI的PM</h3>
+                <p style="color: var(--text-secondary); line-height: 1.8; margin-bottom: 20px;">
+                    真正的AI产品经理需要具备的能力:
+                </p>
+                <ul style="color: var(--text-secondary); margin-left: 20px; line-height: 2;">
+                    <li><strong>判断什么问题适合用AI解决</strong> - 不是所有问题都需要AI</li>
+                    <li><strong>理解AI的能力边界</strong> - 知道AI能做什么、不能做什么</li>
+                    <li><strong>设计AI+人类的协作模式</strong> - 而非完全自动化</li>
+                    <li><strong>量化AI的价值</strong> - 准确率提升?效率提升?成本是否合理?</li>
+                    <li><strong>处理信任与安全问题</strong> - 这往往是AI产品最大的挑战</li>
+                </ul>
+            </div>
+
+            <div class="code-block" data-lang="PRODUCT THINKING">
+<span class="code-line"><span class="code-comment"># 正确的产品流程</span></span>
+<span class="code-line"></span>
+<span class="code-line"><span class="code-keyword">1. 用户调研</span></span>
+<span class="code-line">   访谈 5-10 个目标用户</span>
+<span class="code-line">   - 你的相册有多少张照片?</span>
+<span class="code-line">   - 你多久整理一次?为什么不整理?</span>
+<span class="code-line">   - 你最困扰的是什么?</span>
+<span class="code-line">   - 你愿意让AI删除照片吗?</span>
+<span class="code-line"></span>
+<span class="code-line"><span class="code-keyword">2. 需求验证</span></span>
+<span class="code-line">   真实痛点 = <span class="code-string">"空间不足"</span> or <span class="code-string">"找照片困难"</span> or <span class="code-string">"整理麻烦"</span>?</span>
+<span class="code-line"></span>
+<span class="code-line"><span class="code-keyword">3. MVP定义</span></span>
+<span class="code-line">   只做一个功能,做到极致</span>
+<span class="code-line">   - 如果痛点是<span class="code-string">"空间不足"</span> → 相似照片检测</span>
+<span class="code-line">   - 如果痛点是<span class="code-string">"找照片"</span> → 智能分类</span>
+<span class="code-line"></span>
+<span class="code-line"><span class="code-keyword">4. 原型测试</span></span>
+<span class="code-line">   Figma 画界面 → 找 5 个人测试 → 收集反馈</span>
+<span class="code-line"></span>
+<span class="code-line"><span class="code-keyword">5. 如果验证通过,才开始写代码</span></span>
+            </div>
+
+            <h3 style="font-size: 28px; margin-top: 60px; margin-bottom: 30px;">关键洞察</h3>
+            
+            <div class="problems-grid">
+                <div class="problem-card">
+                    <div class="problem-icon">🎯</div>
+                    <h3 class="problem-title">问题定义>解决方案</h3>
+                    <p class="problem-desc">花80%时间理解问题,20%时间做方案。好的产品从深刻理解用户痛点开始。</p>
+                </div>
+                <div class="problem-card">
+                    <div class="problem-icon">✂️</div>
+                    <h3 class="problem-title">少即是多</h3>
+                    <p class="problem-desc">MVP要克制,1个功能做到极致 > 10个功能都做得平庸。</p>
+                </div>
+                <div class="problem-card">
+                    <div class="problem-icon">🔬</div>
+                    <h3 class="problem-title">快速验证假设</h3>
+                    <p class="problem-desc">原型比代码更快。在投入大量开发前,先用低成本方式验证想法。</p>
+                </div>
+                <div class="problem-card">
+                    <div class="problem-icon">🤝</div>
+                    <h3 class="problem-title">信任是AI产品的基石</h3>
+                    <p class="problem-desc">用户不是害怕AI,而是害怕失去控制。设计人机协作,而非完全自动化。</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Outcome -->
+    <section id="outcome" style="background: var(--bg-secondary);">
+        <div class="container">
+            <div class="section-number">05 / 最终成果</div>
+            <h2 class="section-title">聚焦后的MVP</h2>
+            <p class="section-desc">
+                基于反思,我重新定义了产品范围,聚焦于最核心的价值。
+            </p>
+
+            <div class="timeline">
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-card">
+                        <div class="timeline-label">重新定位</div>
+                        <h3 class="timeline-title">从"全自动"到"智能辅助"</h3>
+                        <div class="timeline-content">
+                            <p><strong>新定位:</strong> 相似照片检测与智能推荐工具</p>
+                            <p style="margin-top: 15px;"><strong>核心价值:</strong></p>
+                            <ul style="margin-left: 20px; margin-top: 10px;">
+                                <li>自动检测连拍照片组</li>
+                                <li>AI评分推荐最佳照片</li>
+                                <li>用户确认后再删除(而非自动删除)</li>
+                                <li>可视化报告展示节省的空间</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-card">
+                        <div class="timeline-label">功能砍掉</div>
+                        <h3 class="timeline-title">暂缓的功能(V2.0再考虑)</h3>
+                        <div class="timeline-content">
+                            <ul style="margin-left: 20px;">
+                                <li>❌ 截图自动删除 → 改为"仅分类,不建议删除"</li>
+                                <li>❌ Live Photo处理 → 用户需求不明确,暂缓</li>
+                                <li>❌ 视频管理 → 范围过大,单独立项</li>
+                                <li>❌ 专业用户模式 → 先验证普通用户需求</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-card">
+                        <div class="timeline-label">实际效果</div>
+                        <h3 class="timeline-title">验证结果</h3>
+                        <div class="timeline-content">
+                            <div class="stats-grid" style="margin-top: 20px;">
+                                <div class="stat-card" style="background: var(--bg-tertiary);">
+                                    <div class="stat-number" style="font-size: 36px;">✓</div>
+                                    <div class="stat-label">成功检测相似组</div>
+                                </div>
+                                <div class="stat-card" style="background: var(--bg-tertiary);">
+                                    <div class="stat-number" style="font-size: 36px;">6.1MB</div>
+                                    <div class="stat-label">测试释放空间</div>
+                                </div>
+                                <div class="stat-card" style="background: var(--bg-tertiary);">
+                                    <div class="stat-number" style="font-size: 36px;"><1%</div>
+                                    <div class="stat-label">误判率</div>
+                                </div>
+                            </div>
+                            <p style="color: var(--text-secondary); margin-top: 10px;">
+                                查看真实工具输出报告：
+                                <a href="./photo_report.html" class="btn btn-secondary" target="_blank" rel="noopener noreferrer" style="margin-left: 10px; padding: 10px 20px; font-size: 14px;">
+                                    打开 photo_report.html
+                                </a>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="learning-box">
+                <h3 class="learning-title">核心学习</h3>
+                <p style="color: var(--text-secondary); line-height: 1.8;">
+                    这个项目最大的价值不是做出了一个工具,而是让我深刻理解了:<br><br>
+                    <strong>好的产品经理不是功能的堆砌者,而是价值的聚焦者。</strong><br><br>
+                    在AI时代,技术能力固然重要,但更重要的是:<br>
+                    ✓ 识别真实问题的能力<br>
+                    ✓ 设计人机协作的智慧<br>
+                    ✓ 快速验证假设的执行力<br>
+                    ✓ 克制功能的产品品味
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <section>
+        <div class="container">
+            <div class="cta-section">
+                <h2 class="cta-title">查看完整项目</h2>
+                <p class="cta-desc">
+                    包含完整的代码实现、产品文档和反思过程
+                </p>
+                <div class="cta-buttons">
+                    <a href="#" class="btn btn-primary">
+                        <span>GitHub 仓库</span>
+                        <span>→</span>
+                    </a>
+                    <a href="#" class="btn btn-secondary">
+                        <span>查看Demo</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <p>© 2026 AI Product Manager Portfolio</p>
+        <p style="color: var(--text-muted); font-size: 14px;">
+            这个项目展示了一个真实的产品思考过程,<br>
+            包括错误、反思和成长。
+        </p>
+        <div class="social-links">
+            <a href="#">GitHub</a>
+            <a href="#">LinkedIn</a>
+            <a href="#">Email</a>
+        </div>
+    </footer>
+
+    <script>
+        const i18n = {
+            zh: {
+                documentTitle: '智能相册整理工具 - 产品思考全过程 | AI PM Case Study',
+                nav: ['问题', '教训', '收获', '成果'],
+                hero: {
+                    tag: 'AI PRODUCT MANAGER CASE STUDY',
+                    titleHtml: '从过度设计到<br><span class="hero-highlight">产品本质</span>的思考',
+                    subtitleHtml: '一个智能相册整理工具的完整产品思考过程:<br>初始想法 → 技术实现 → 用户质疑 → 深度反思 → MVP迭代'
+                },
+                meta: {
+                    labels: ['项目类型', '开发周期', '技术栈', '核心价值'],
+                    values: ['AI产品设计', '2周迭代', 'Python + Qwen 2.5', '产品思维']
+                },
+                sections: {
+                    numbers: ['01 / 问题发现', '02 / 初始方案', '03 / 关键教训', '04 / 深度反思', '05 / 最终成果'],
+                    titles: ['从真实痛点出发', '技术先行的设计', '过度设计的代价', '重新思考产品本质', '聚焦后的MVP'],
+                    descs: [
+                        '在日常使用手机的过程中,我观察到相册管理是一个普遍存在但被忽视的问题。',
+                        '基于对问题的理解,我快速设计了一个"功能完整"的解决方案。',
+                        '在实际测试中,用户的一句质疑让我意识到方案存在根本性问题。',
+                        '这次失败让我系统性地反思了AI产品经理的核心能力要求。',
+                        '基于反思,我重新定义了产品范围,聚焦于最核心的价值。'
+                    ]
+                },
+                problem: {
+                    titles: ['冗余照片堆积', '截图残留', '缺乏智能分类', '存储空间紧张'],
+                    descs: [
+                        '同一场景连拍多张后未筛选,导致大量相似照片占用空间',
+                        '验证码、订单、快递信息等临时截图在使用后未被清理',
+                        '不同时间、地点、类型的照片混杂在一起,找照片困难',
+                        '手机提示"存储空间不足",但手动整理耗时费力'
+                    ],
+                    stats: ['平均相册照片数', '冗余照片占比', '手动整理耗时', '大多数人整理频率']
+                },
+                initial: {
+                    labels: ['功能设计', '技术实现', '快速开发'],
+                    titles: ['分层处理策略', 'AI + 传统算法结合', '2小时完成MVP'],
+                    paragraphs: ['设计了三层架构:', '技术栈:', '在没有充分用户验证的情况下,直接写了400+行Python代码,实现了:'],
+                    lists: [
+                        ['即时层: 功能性文件识别(截图、验证码)', '短期层: 冗余照片检测与删除建议', '长期层: 智能分类与归档'],
+                        ['感知哈希算法检测相似照片', 'OpenCV清晰度评分', 'Qwen 2.5 7B本地大模型推理', 'HTML可视化报告生成'],
+                        ['照片扫描与特征提取', '相似度计算与分组', 'AI智能评分', '可视化报告生成']
+                    ],
+                    codeHtml: `<span class="code-line"><span class="code-comment"># 核心算法示例</span></span>
+<span class="code-line"><span class="code-keyword">def</span> calculate_perceptual_hash(image_path):</span>
+<span class="code-line">    <span class="code-comment"># 感知哈希算法</span></span>
+<span class="code-line">    img = Image.open(image_path).convert(<span class="code-string">'L'</span>)</span>
+<span class="code-line">    img = img.resize((8, 8))</span>
+<span class="code-line">    pixels = np.array(img).flatten()</span>
+<span class="code-line">    avg = pixels.mean()</span>
+<span class="code-line">    <span class="code-keyword">return</span> <span class="code-string">''</span>.join([<span class="code-string">'1'</span> <span class="code-keyword">if</span> p > avg <span class="code-keyword">else</span> <span class="code-string">'0'</span> <span class="code-keyword">for</span> p <span class="code-keyword">in</span> pixels])</span>`
+                },
+                mistakes: {
+                    title: '用户质疑: "AI怎么判断哪些截图可以删?"',
+                    p1Html: '当工具识别出截图并建议删除时,测试用户提出了一个核心问题:<br>"这些截图里可能有重要信息(银行转账、身份证、重要通知),如果AI误删了怎么办?你拿什么标准来判断哪些是临时的、哪些是重要的?"',
+                    p2Html: '这个问题暴露了产品设计的核心矛盾:<strong style="color: var(--error)">用户需要自动化,但更害怕误删重要数据。</strong>',
+                    comparisonTitles: ['我犯的错误', '应该怎么做'],
+                    leftList: [
+                        '没有做用户调研,凭主观假设设计功能',
+                        '解决方案先行,而非问题驱动',
+                        '追求"技术炫技",堆砌AI能力',
+                        '功能过载,10+功能但没有聚焦核心价值',
+                        '忽视了信任问题:用户不敢让AI删照片',
+                        '跳过了原型验证,直接写了400行代码'
+                    ],
+                    rightList: [
+                        '先访谈5-10个真实用户,验证痛点',
+                        '从用户最痛的点切入,而非"大而全"',
+                        '评估AI的真实价值:成本vs收益',
+                        '定义清晰的MVP:只做1个核心功能',
+                        '设计人机协作:AI辅助,人类决策',
+                        '先做低保真原型,找5个人测试反馈'
+                    ]
+                },
+                learning: {
+                    boxTitle: 'AI PM ≠ 会用AI的PM',
+                    lead: '真正的AI产品经理需要具备的能力:',
+                    bulletsHtml: [
+                        '<strong>判断什么问题适合用AI解决</strong> - 不是所有问题都需要AI',
+                        '<strong>理解AI的能力边界</strong> - 知道AI能做什么、不能做什么',
+                        '<strong>设计AI+人类的协作模式</strong> - 而非完全自动化',
+                        '<strong>量化AI的价值</strong> - 准确率提升?效率提升?成本是否合理?',
+                        '<strong>处理信任与安全问题</strong> - 这往往是AI产品最大的挑战'
+                    ],
+                    codeHtml: `<span class="code-line"><span class="code-comment"># 正确的产品流程</span></span>
+<span class="code-line"></span>
+<span class="code-line"><span class="code-keyword">1. 用户调研</span></span>
+<span class="code-line">   访谈 5-10 个目标用户</span>
+<span class="code-line">   - 你的相册有多少张照片?</span>
+<span class="code-line">   - 你多久整理一次?为什么不整理?</span>
+<span class="code-line">   - 你最困扰的是什么?</span>
+<span class="code-line">   - 你愿意让AI删除照片吗?</span>
+<span class="code-line"></span>
+<span class="code-line"><span class="code-keyword">2. 需求验证</span></span>
+<span class="code-line">   真实痛点 = <span class="code-string">"空间不足"</span> or <span class="code-string">"找照片困难"</span> or <span class="code-string">"整理麻烦"</span>?</span>
+<span class="code-line"></span>
+<span class="code-line"><span class="code-keyword">3. MVP定义</span></span>
+<span class="code-line">   只做一个功能,做到极致</span>
+<span class="code-line">   - 如果痛点是<span class="code-string">"空间不足"</span> → 相似照片检测</span>
+<span class="code-line">   - 如果痛点是<span class="code-string">"找照片"</span> → 智能分类</span>
+<span class="code-line"></span>
+<span class="code-line"><span class="code-keyword">4. 原型测试</span></span>
+<span class="code-line">   Figma 画界面 → 找 5 个人测试 → 收集反馈</span>
+<span class="code-line"></span>
+<span class="code-line"><span class="code-keyword">5. 如果验证通过,才开始写代码</span></span>`,
+                    insightTitle: '关键洞察',
+                    insightTitles: ['问题定义>解决方案', '少即是多', '快速验证假设', '信任是AI产品的基石'],
+                    insightDescs: [
+                        '花80%时间理解问题,20%时间做方案。好的产品从深刻理解用户痛点开始。',
+                        'MVP要克制,1个功能做到极致 > 10个功能都做得平庸。',
+                        '原型比代码更快。在投入大量开发前,先用低成本方式验证想法。',
+                        '用户不是害怕AI,而是害怕失去控制。设计人机协作,而非完全自动化。'
+                    ]
+                },
+                outcome: {
+                    labels: ['重新定位', '功能砍掉', '实际效果'],
+                    titles: ['从"全自动"到"智能辅助"', '暂缓的功能(V2.0再考虑)', '验证结果'],
+                    positioningHtml: '<strong>新定位:</strong> 相似照片检测与智能推荐工具',
+                    coreValueHtml: '<strong>核心价值:</strong>',
+                    coreValueList: ['自动检测连拍照片组', 'AI评分推荐最佳照片', '用户确认后再删除(而非自动删除)', '可视化报告展示节省的空间'],
+                    deferredList: ['❌ 截图自动删除 → 改为"仅分类,不建议删除"', '❌ Live Photo处理 → 用户需求不明确,暂缓', '❌ 视频管理 → 范围过大,单独立项', '❌ 专业用户模式 → 先验证普通用户需求'],
+                    resultStats: ['成功检测相似组', '测试释放空间', '误判率'],
+                    reportIntro: '查看真实工具输出报告：',
+                    reportButton: '打开 photo_report.html',
+                    finalLearningTitle: '核心学习',
+                    finalLearningHtml: '这个项目最大的价值不是做出了一个工具,而是让我深刻理解了:<br><br><strong>好的产品经理不是功能的堆砌者,而是价值的聚焦者。</strong><br><br>在AI时代,技术能力固然重要,但更重要的是:<br>✓ 识别真实问题的能力<br>✓ 设计人机协作的智慧<br>✓ 快速验证假设的执行力<br>✓ 克制功能的产品品味'
+                },
+                cta: {
+                    title: '查看完整项目',
+                    desc: '包含完整的代码实现、产品文档和反思过程',
+                    primary: 'GitHub 仓库',
+                    secondary: '查看Demo'
+                },
+                footer: {
+                    descriptionHtml: '这个项目展示了一个真实的产品思考过程,<br>包括错误、反思和成长。'
+                }
+            },
+            en: {
+                documentTitle: 'Smart Photo Organizer - Full Product Thinking Journey | AI PM Case Study',
+                nav: ['Problem', 'Lessons', 'Learning', 'Outcome'],
+                hero: {
+                    tag: 'AI PRODUCT MANAGER CASE STUDY',
+                    titleHtml: 'From Over-Engineering to<br><span class="hero-highlight">Product Essence</span>',
+                    subtitleHtml: 'A full product-thinking journey for an AI photo organizer:<br>Initial idea → Technical build → User challenge → Deep reflection → MVP iteration'
+                },
+                meta: {
+                    labels: ['Project Type', 'Timeline', 'Tech Stack', 'Core Value'],
+                    values: ['AI Product Design', '2-Week Iteration', 'Python + Qwen 2.5', 'Product Thinking']
+                },
+                sections: {
+                    numbers: ['01 / Problem Discovery', '02 / Initial Solution', '03 / Key Lesson', '04 / Reflection', '05 / Final Outcome'],
+                    titles: ['Start from Real User Pain', 'Tech-First Design', 'The Cost of Over-Design', 'Rethinking Product Fundamentals', 'A Focused MVP'],
+                    descs: [
+                        'In daily phone usage, I noticed that photo management is a common but overlooked problem.',
+                        'Based on my understanding of the problem, I quickly designed a "feature-complete" solution.',
+                        'During real testing, one user question revealed a fundamental flaw in the solution.',
+                        'This failure pushed me to systematically rethink the core capabilities required of an AI PM.',
+                        'After reflection, I redefined the scope and focused on the most critical value.'
+                    ]
+                },
+                problem: {
+                    titles: ['Redundant Photo Buildup', 'Screenshot Leftovers', 'No Smart Organization', 'Storage Pressure'],
+                    descs: [
+                        'Multiple burst shots of the same scene are rarely filtered, which wastes storage.',
+                        'Temporary screenshots like OTPs, orders, and delivery info are often never cleaned up.',
+                        'Photos across time, place, and type are mixed together, making retrieval difficult.',
+                        'Phones keep warning about low storage, but manual cleanup is time-consuming.'
+                    ],
+                    stats: ['Average Photos in Album', 'Redundant Photo Ratio', 'Manual Cleanup Time', 'Cleanup Frequency for Most Users']
+                },
+                initial: {
+                    labels: ['Feature Design', 'Technical Build', 'Rapid Development'],
+                    titles: ['Layered Processing Strategy', 'AI + Classical Algorithms', 'MVP Built in 2 Hours'],
+                    paragraphs: ['I designed a three-layer architecture:', 'Tech stack:', 'Without enough user validation, I directly wrote 400+ lines of Python code and built:'],
+                    lists: [
+                        ['Instant layer: functional file detection (screenshots, verification codes)', 'Short-term layer: redundant photo detection and deletion suggestions', 'Long-term layer: smart categorization and archiving'],
+                        ['Perceptual hash for similar photo detection', 'OpenCV sharpness scoring', 'Qwen 2.5 7B local model inference', 'HTML visual report generation'],
+                        ['Photo scanning and feature extraction', 'Similarity calculation and grouping', 'AI scoring recommendations', 'Visual report generation']
+                    ],
+                    codeHtml: `<span class="code-line"><span class="code-comment"># Core algorithm example</span></span>
+<span class="code-line"><span class="code-keyword">def</span> calculate_perceptual_hash(image_path):</span>
+<span class="code-line">    <span class="code-comment"># Perceptual hashing</span></span>
+<span class="code-line">    img = Image.open(image_path).convert(<span class="code-string">'L'</span>)</span>
+<span class="code-line">    img = img.resize((8, 8))</span>
+<span class="code-line">    pixels = np.array(img).flatten()</span>
+<span class="code-line">    avg = pixels.mean()</span>
+<span class="code-line">    <span class="code-keyword">return</span> <span class="code-string">''</span>.join([<span class="code-string">'1'</span> <span class="code-keyword">if</span> p > avg <span class="code-keyword">else</span> <span class="code-string">'0'</span> <span class="code-keyword">for</span> p <span class="code-keyword">in</span> pixels])</span>`
+                },
+                mistakes: {
+                    title: 'User Challenge: "How does AI decide which screenshots are safe to delete?"',
+                    p1Html: 'When the tool detected screenshots and suggested deletion, a test user raised a core concern:<br>"Some screenshots may contain important information (bank transfer, ID card, critical notice). What if AI deletes them by mistake? What standard determines what is temporary versus important?"',
+                    p2Html: 'This exposed a core product tension:<strong style="color: var(--error)">users want automation, but fear accidental deletion of important data even more.</strong>',
+                    comparisonTitles: ['Mistakes I Made', 'What I Should Have Done'],
+                    leftList: [
+                        'No user interviews; features were based on subjective assumptions',
+                        'Solution-first approach instead of problem-first thinking',
+                        'Chasing technical wow effects and piling on AI features',
+                        'Feature overload: 10+ features without a focused core value',
+                        'Ignored trust issues: users do not dare let AI delete photos',
+                        'Skipped prototyping and jumped straight into 400 lines of code'
+                    ],
+                    rightList: [
+                        'Interview 5-10 real users first to validate pain points',
+                        'Start from the strongest user pain, not a giant all-in-one scope',
+                        'Evaluate real AI value: cost versus benefit',
+                        'Define a clear MVP with one core feature',
+                        'Design human-AI collaboration: AI assists, humans decide',
+                        'Build a low-fidelity prototype first and test with 5 users'
+                    ]
+                },
+                learning: {
+                    boxTitle: 'AI PM ≠ A PM Who Only Uses AI',
+                    lead: 'Capabilities a real AI product manager must have:',
+                    bulletsHtml: [
+                        '<strong>Judge which problems should use AI</strong> - not every problem needs AI',
+                        '<strong>Understand AI capability boundaries</strong> - know what AI can and cannot do',
+                        '<strong>Design AI + human collaboration</strong> - instead of full automation',
+                        '<strong>Quantify AI value</strong> - better accuracy? faster workflow? reasonable cost?',
+                        '<strong>Handle trust and safety risks</strong> - often the hardest challenge in AI products'
+                    ],
+                    codeHtml: `<span class="code-line"><span class="code-comment"># Better product workflow</span></span>
+<span class="code-line"></span>
+<span class="code-line"><span class="code-keyword">1. User research</span></span>
+<span class="code-line">   Interview 5-10 target users</span>
+<span class="code-line">   - How many photos do you have?</span>
+<span class="code-line">   - How often do you organize them? Why not more often?</span>
+<span class="code-line">   - What frustrates you the most?</span>
+<span class="code-line">   - Would you let AI delete photos?</span>
+<span class="code-line"></span>
+<span class="code-line"><span class="code-keyword">2. Validate demand</span></span>
+<span class="code-line">   Real pain point = <span class="code-string">"low storage"</span> or <span class="code-string">"hard to find photos"</span> or <span class="code-string">"cleanup is tedious"</span>?</span>
+<span class="code-line"></span>
+<span class="code-line"><span class="code-keyword">3. Define MVP</span></span>
+<span class="code-line">   Build one feature and make it excellent</span>
+<span class="code-line">   - If pain is <span class="code-string">"low storage"</span> → similar photo detection</span>
+<span class="code-line">   - If pain is <span class="code-string">"finding photos"</span> → smart classification</span>
+<span class="code-line"></span>
+<span class="code-line"><span class="code-keyword">4. Prototype testing</span></span>
+<span class="code-line">   Build in Figma → test with 5 users → collect feedback</span>
+<span class="code-line"></span>
+<span class="code-line"><span class="code-keyword">5. Write code only after validation passes</span></span>`,
+                    insightTitle: 'Key Insights',
+                    insightTitles: ['Problem Definition > Solution', 'Less Is More', 'Validate Fast', 'Trust Is the Foundation of AI Products'],
+                    insightDescs: [
+                        'Spend 80% of the time understanding the problem and 20% crafting the solution.',
+                        'An MVP should be disciplined: one excellent feature beats ten mediocre ones.',
+                        'Prototypes are faster than code. Validate ideas cheaply before heavy implementation.',
+                        'Users are not afraid of AI itself; they fear losing control.'
+                    ]
+                },
+                outcome: {
+                    labels: ['Repositioning', 'Scope Cuts', 'Real Results'],
+                    titles: ['From "Fully Automatic" to "Intelligent Assist"', 'Deferred Features (For V2.0)', 'Validation Results'],
+                    positioningHtml: '<strong>New Positioning:</strong> Similar photo detection and smart recommendation tool',
+                    coreValueHtml: '<strong>Core Value:</strong>',
+                    coreValueList: ['Auto-detect burst groups', 'AI picks best shots', 'Delete only after user confirmation (not auto-delete)', 'Visual reports show recovered storage'],
+                    deferredList: ['❌ Auto-delete screenshots → changed to "categorize only, no delete suggestion"', '❌ Live Photo support → unclear demand, deferred', '❌ Video management → scope too large, separate project', '❌ Pro-user mode → validate mainstream demand first'],
+                    resultStats: ['Similar groups detected', 'Storage reclaimed in test', 'False-positive rate'],
+                    reportIntro: 'View the real tool output report:',
+                    reportButton: 'Open photo_report.html',
+                    finalLearningTitle: 'Core Learning',
+                    finalLearningHtml: 'The biggest value of this project is not just shipping a tool. It is this understanding:<br><br><strong>A strong product manager is not a feature collector, but a value-focused decision maker.</strong><br><br>In the AI era, technical skill matters, but these matter more:<br>✓ Ability to identify real user problems<br>✓ Ability to design human-AI collaboration<br>✓ Ability to validate assumptions quickly<br>✓ Taste and discipline in feature scoping'
+                },
+                cta: {
+                    title: 'View Full Project',
+                    desc: 'Includes full implementation code, product docs, and reflection process',
+                    primary: 'GitHub Repository',
+                    secondary: 'View Demo'
+                },
+                footer: {
+                    descriptionHtml: 'This project shows a real product-thinking journey,<br>including mistakes, reflection, and growth.'
+                }
+            }
+        };
+
+        function setNodeTextList(nodeList, values) {
+            nodeList.forEach((node, index) => {
+                if (values[index] !== undefined) {
+                    node.textContent = values[index];
+                }
+            });
+        }
+
+        function setNodeHtmlList(nodeList, values) {
+            nodeList.forEach((node, index) => {
+                if (values[index] !== undefined) {
+                    node.innerHTML = values[index];
+                }
+            });
+        }
+
+        function applyLanguage(lang) {
+            const content = i18n[lang] || i18n.zh;
+            const sections = document.querySelectorAll('section');
+            const problemSection = document.getElementById('problem');
+            const mistakesSection = document.getElementById('mistakes');
+            const learningSection = document.getElementById('learning');
+            const outcomeSection = document.getElementById('outcome');
+            const initialSection = sections[2];
+            const ctaSection = document.querySelector('.cta-section');
+
+            document.title = content.documentTitle;
+            document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+
+            setNodeTextList(document.querySelectorAll('.nav-links a'), content.nav);
+            document.querySelector('.hero-tag').textContent = content.hero.tag;
+            document.querySelector('.hero h1').innerHTML = content.hero.titleHtml;
+            document.querySelector('.hero-subtitle').innerHTML = content.hero.subtitleHtml;
+
+            setNodeTextList(document.querySelectorAll('.meta-label'), content.meta.labels);
+            setNodeTextList(document.querySelectorAll('.meta-value'), content.meta.values);
+
+            setNodeTextList(document.querySelectorAll('.section-number'), content.sections.numbers);
+            setNodeTextList(document.querySelectorAll('.section-title'), content.sections.titles);
+            setNodeTextList(document.querySelectorAll('.section-desc'), content.sections.descs);
+
+            setNodeTextList(problemSection.querySelectorAll('.problem-title'), content.problem.titles);
+            setNodeTextList(problemSection.querySelectorAll('.problem-desc'), content.problem.descs);
+            setNodeTextList(problemSection.querySelectorAll('.stats-grid .stat-label'), content.problem.stats);
+
+            const initialCards = initialSection.querySelectorAll('.timeline-item');
+            initialCards.forEach((card, index) => {
+                card.querySelector('.timeline-label').textContent = content.initial.labels[index];
+                card.querySelector('.timeline-title').textContent = content.initial.titles[index];
+                card.querySelector('.timeline-content > p').textContent = content.initial.paragraphs[index];
+                setNodeTextList(card.querySelectorAll('.timeline-content li'), content.initial.lists[index]);
+            });
+            initialSection.querySelector('.code-block[data-lang="PYTHON"]').innerHTML = content.initial.codeHtml;
+
+            const mistakeBox = mistakesSection.querySelector('.mistake-box');
+            mistakeBox.querySelector('.mistake-title').textContent = content.mistakes.title;
+            const mistakeParagraphs = mistakeBox.querySelectorAll('p');
+            mistakeParagraphs[0].innerHTML = content.mistakes.p1Html;
+            mistakeParagraphs[1].innerHTML = content.mistakes.p2Html;
+
+            setNodeTextList(mistakesSection.querySelectorAll('.comparison-title'), content.mistakes.comparisonTitles);
+            const comparisonLists = mistakesSection.querySelectorAll('.comparison-list');
+            setNodeTextList(comparisonLists[0].querySelectorAll('li'), content.mistakes.leftList);
+            setNodeTextList(comparisonLists[1].querySelectorAll('li'), content.mistakes.rightList);
+
+            const learningBox = learningSection.querySelector('.learning-box');
+            learningBox.querySelector('.learning-title').textContent = content.learning.boxTitle;
+            learningBox.querySelector('p').textContent = content.learning.lead;
+            setNodeHtmlList(learningBox.querySelectorAll('li'), content.learning.bulletsHtml);
+            learningSection.querySelector('.code-block[data-lang="PRODUCT THINKING"]').innerHTML = content.learning.codeHtml;
+            learningSection.querySelector('h3[style*="font-size: 28px"]').textContent = content.learning.insightTitle;
+            setNodeTextList(learningSection.querySelectorAll('.problems-grid .problem-title'), content.learning.insightTitles);
+            setNodeTextList(learningSection.querySelectorAll('.problems-grid .problem-desc'), content.learning.insightDescs);
+
+            const outcomeCards = outcomeSection.querySelectorAll('.timeline-item');
+            outcomeCards.forEach((card, index) => {
+                card.querySelector('.timeline-label').textContent = content.outcome.labels[index];
+                card.querySelector('.timeline-title').textContent = content.outcome.titles[index];
+            });
+
+            const outcomeCardOneParagraphs = outcomeCards[0].querySelectorAll('.timeline-content > p');
+            outcomeCardOneParagraphs[0].innerHTML = content.outcome.positioningHtml;
+            outcomeCardOneParagraphs[1].innerHTML = content.outcome.coreValueHtml;
+            setNodeTextList(outcomeCards[0].querySelectorAll('.timeline-content li'), content.outcome.coreValueList);
+
+            setNodeTextList(outcomeCards[1].querySelectorAll('.timeline-content li'), content.outcome.deferredList);
+            setNodeTextList(outcomeCards[2].querySelectorAll('.stat-label'), content.outcome.resultStats);
+
+            const reportParagraph = outcomeCards[2].querySelector('.timeline-content > p');
+            reportParagraph.innerHTML = `${content.outcome.reportIntro}
+                                <a href="./photo_report.html" class="btn btn-secondary" target="_blank" rel="noopener noreferrer" style="margin-left: 10px; padding: 10px 20px; font-size: 14px;">
+                                    ${content.outcome.reportButton}
+                                </a>`;
+
+            const finalLearningBox = outcomeSection.querySelector('.learning-box');
+            finalLearningBox.querySelector('.learning-title').textContent = content.outcome.finalLearningTitle;
+            finalLearningBox.querySelector('p').innerHTML = content.outcome.finalLearningHtml;
+
+            ctaSection.querySelector('.cta-title').textContent = content.cta.title;
+            ctaSection.querySelector('.cta-desc').textContent = content.cta.desc;
+            const ctaButtons = ctaSection.querySelectorAll('.cta-buttons a');
+            ctaButtons[0].querySelector('span').textContent = content.cta.primary;
+            ctaButtons[1].querySelector('span').textContent = content.cta.secondary;
+
+            document.querySelector('footer p:nth-of-type(2)').innerHTML = content.footer.descriptionHtml;
+        }
+
+        function updateLanguageToggle(lang) {
+            document.querySelectorAll('.lang-btn').forEach(button => {
+                button.classList.toggle('active', button.dataset.lang === lang);
+            });
+        }
+
+        function switchLanguage(lang) {
+            applyLanguage(lang);
+            updateLanguageToggle(lang);
+            localStorage.setItem('photoCaseStudyLang', lang);
+        }
+
+        // Scroll reveal animation
+        function reveal() {
+            const reveals = document.querySelectorAll('.reveal');
+            reveals.forEach(element => {
+                const windowHeight = window.innerHeight;
+                const elementTop = element.getBoundingClientRect().top;
+                const elementVisible = 150;
+                
+                if (elementTop < windowHeight - elementVisible) {
+                    element.classList.add('active');
+                }
+            });
+        }
+
+        window.addEventListener('scroll', reveal);
+        reveal();
+
+        // Smooth scroll
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                const href = this.getAttribute('href');
+                if (!href || href === '#') {
+                    return;
+                }
+                const target = document.querySelector(href);
+                if (target) {
+                    e.preventDefault();
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        document.querySelectorAll('.lang-btn').forEach(button => {
+            button.addEventListener('click', () => {
+                switchLanguage(button.dataset.lang);
+            });
+        });
+
+        const savedLanguage = localStorage.getItem('photoCaseStudyLang');
+        switchLanguage(savedLanguage === 'en' ? 'en' : 'zh');
+    </script>
+</body>
+</html>
